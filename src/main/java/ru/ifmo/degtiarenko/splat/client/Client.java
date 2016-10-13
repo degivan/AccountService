@@ -25,6 +25,12 @@ public class Client {
     private final Identifiers ids;
     private final List<Thread> threads;
 
+    /**
+     * @param rCount  Amount of threads to perform read task
+     * @param wCount  Amount of threads to perform write task
+     * @param ids     Allowed account identifiers
+     * @param service <code>AccountService</code> instance to invoke remotely methods with
+     */
     public Client(int rCount, int wCount, Identifiers ids, AccountService service) {
         this.rCount = rCount;
         this.wCount = wCount;
@@ -37,10 +43,11 @@ public class Client {
 
     /**
      * Creates new <code>Client</code> instance.
+     *
      * @param config configuration of <code>Client</code>
      * @return new <code>Client</code> instance.
-     * @throws RemoteException if failed to invoke <code>AccountService</code> method(s) remotely
-     * @throws NotBoundException if failed to find service
+     * @throws RemoteException   if remote invocation of <code>AccountService method(s) is failed
+     * @throws NotBoundException if attempt to find service is failed
      */
     public static Client createClient(Config config) throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(config.getServiceHostIp(), config.getServicePort());
@@ -52,17 +59,17 @@ public class Client {
      * Starts testing of <code>AccountService</code> implementation.
      */
     public void run() {
-        for(int i = 0; i < rCount; i++) {
+        for (int i = 0; i < rCount; i++) {
             threads.add(new Thread(new ReaderTask(ids)));
         }
-        for(int i = 0; i < wCount; i++) {
+        for (int i = 0; i < wCount; i++) {
             threads.add(new Thread(new WriterTask(ids)));
         }
         threads.forEach(Thread::start);
 
         Scanner scanner = new Scanner(System.in);
-        while(true) {
-            if(scanner.nextLine().equals("shutdown")) {
+        while (true) {
+            if (scanner.nextLine().equals("shutdown")) {
                 shutdown();
                 break;
             } else {
@@ -98,13 +105,13 @@ public class Client {
 
         @Override
         public void run() {
-            while(true) {
+            while (true) {
                 try {
                     service.getAmount(ids.getRandomIdentifier());
                 } catch (RemoteException | SQLException e) {
                     e.printStackTrace();
                 }
-                if(Thread.currentThread().isInterrupted())
+                if (Thread.currentThread().isInterrupted())
                     break;
             }
         }
@@ -119,13 +126,13 @@ public class Client {
 
         @Override
         public void run() {
-            while(true) {
+            while (true) {
                 try {
                     service.addAmount(ids.getRandomIdentifier(), Math.abs(random.nextLong()));
                 } catch (RemoteException | SQLException e) {
                     e.printStackTrace();
                 }
-                if(Thread.currentThread().isInterrupted())
+                if (Thread.currentThread().isInterrupted())
                     break;
             }
         }

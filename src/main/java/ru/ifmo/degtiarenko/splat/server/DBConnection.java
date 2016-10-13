@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 /**
  * <P>A connection (session) with a specific
  * database of accounts. Every account has an identifier(or id) and balance.
- * <P>
+ * <p>
  */
 public class DBConnection implements AutoCloseable {
     private final Connection connection;
@@ -39,7 +39,9 @@ public class DBConnection implements AutoCloseable {
         selectStatement = new ThreadLocal<>();
     }
 
-    /** Creates an instance of <code>DBConnection</code>.
+    /**
+     * Creates an instance of <code>DBConnection</code>.
+     *
      * @param config configuration of <code>DBConnection</code>
      * @return new instance of <code>DBConnection</code>
      * @throws Exception if fails to connect to SQL server
@@ -59,11 +61,13 @@ public class DBConnection implements AutoCloseable {
     private static void checkTable(Connection connection) throws SQLException {
         Statement statement = connection.createStatement();
         statement.executeUpdate("CREATE TABLE IF NOT EXISTS accounts (" +
-                        "id INTEGER PRIMARY KEY, account BIGINT);");
+                "id INTEGER PRIMARY KEY, account BIGINT);");
     }
 
-    /** Releases this <code>DBConnection</code> object's database and JDBC resources immediately.
-     * @throws SQLException if a database access error occurs
+    /**
+     * Releases this <code>DBConnection</code> object's database and JDBC resources immediately.
+     *
+     * @throws SQLException if database access error occurs
      */
     public void close() throws SQLException {
         connection.close();
@@ -71,28 +75,28 @@ public class DBConnection implements AutoCloseable {
 
     /**
      * Gets information about account's balance with chosen <code>id</code>  from SQL server.
+     *
      * @param id identifier of an account
      * @return account's balance
      * @throws SQLException if fails to execute query
      */
     public AtomicLong getAmount(Integer id) throws SQLException {
-        if(selectStatement.get() == null)
+        if (selectStatement.get() == null)
             selectStatement.set(connection.prepareStatement("SELECT account FROM accounts WHERE id = ?;"));
         selectStatement.get().setInt(1, id);
 
         Lock lock = locks.getOrDefault(id, null);
-        if (lock == null)
-        {
+        if (lock == null) {
             locks.putIfAbsent(id, new ReentrantLock());
             lock = locks.get(id);
         }
         lock.lock();
         try {
             ResultSet rs = selectStatement.get().executeQuery();
-            if(rs.next()) {
+            if (rs.next()) {
                 return new AtomicLong(rs.getLong(1));
             } else {
-                if(insertStatement.get() == null)
+                if (insertStatement.get() == null)
                     insertStatement.set(connection.prepareStatement("INSERT INTO accounts (id, account) VALUES (?, 0);"));
                 insertStatement.get().setInt(1, id);
                 insertStatement.get().executeUpdate();
@@ -103,14 +107,16 @@ public class DBConnection implements AutoCloseable {
         }
     }
 
-    /** Updates balances in database.
+    /**
+     * Updates balances in database.
+     *
      * @param data new balances
-     * @throws SQLException  if fails to execute query
+     * @throws SQLException if query execution is failed
      */
     public void updateData(ConcurrentMap<Integer, AtomicLong> data) throws SQLException {
         data.forEach((id, account) -> {
             try {
-                if(updateStatement.get() == null)
+                if (updateStatement.get() == null)
                     updateStatement.set(connection.prepareStatement("UPDATE accounts SET account = ? WHERE id = ?;"));
                 updateStatement.get().setLong(1, account.longValue());
                 updateStatement.get().setInt(2, id);

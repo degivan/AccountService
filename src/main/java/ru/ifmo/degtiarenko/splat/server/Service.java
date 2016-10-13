@@ -43,32 +43,36 @@ public class Service implements AccountService {
     }
 
 
-    /** Implementation of <code>AccountService</code> interface method.
+    /**
+     * Implementation of <code>AccountService</code> interface method.
+     *
      * @param id balance identifier
      * @return account's balance
      * @throws RemoteException if failed to invoke method remotely
-     * @throws SQLException if failed to execute query to the database
+     * @throws SQLException    if failed to execute query to the database
      */
     public Long getAmount(Integer id) throws RemoteException, SQLException {
-        if(!cache.containsKey(id))
+        if (!cache.containsKey(id))
             cache.put(id, dbConnection.getAmount(id));
         readRequestCount.incrementAndGet();
         return cache.get(id).longValue();
     }
 
-    /** Implementation of <code>AccountService</code> interface method.
+    /**
+     * Implementation of <code>AccountService</code> interface method.
+     *
      * @param id    balance identifier
      * @param value positive or negative value, which must be added to current balance
      * @throws RemoteException if failed to invoke method remotely
-     * @throws SQLException if failed to execute query to the database
+     * @throws SQLException    if failed to execute query to the database
      */
     public void addAmount(Integer id, Long value) throws RemoteException, SQLException {
         AtomicLong accountBefore;
-        if(!cache.containsKey(id))
+        if (!cache.containsKey(id))
             cache.putIfAbsent(id, dbConnection.getAmount(id));
         accountBefore = cache.get(id);
         cache.put(id, new AtomicLong(value + accountBefore.longValue()));
-        if(cache.size() > CACHE_MAX_SIZE) {
+        if (cache.size() > CACHE_MAX_SIZE) {
             dbConnection.updateData(cache);
             cache.clear();
         }
@@ -107,7 +111,7 @@ public class Service implements AccountService {
     }
 
     private void showStatistics() {
-        long time = (Calendar.getInstance().getTimeInMillis() - startTime.getTimeInMillis() ) / 1000;
+        long time = (Calendar.getInstance().getTimeInMillis() - startTime.getTimeInMillis()) / 1000;
         System.out.println("Total amount of read requests: " + readRequestCount);
         System.out.println("Total amount of write requests: " + writeRequestCount);
         System.out.println("Average amount of read requests per second: " + readRequestCount.intValue() / time);

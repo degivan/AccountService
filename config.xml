@@ -9,5 +9,5 @@
     <entry key="jdbc.url">jdbc:postgresql://127.0.0.1:5433/test</entry>
     <entry key="client.rcount">10</entry>
     <entry key="client.wcount">10</entry>
-    <entry key="client.range">1-10000</entry>
+    <entry key="client.range">1,2,6-15,20-50</entry>
 </properties>

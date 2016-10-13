@@ -1,5 +1,6 @@
 package ru.ifmo.degtiarenko.splat.config;
 
+import ru.ifmo.degtiarenko.splat.client.BadArgumentException;
 import ru.ifmo.degtiarenko.splat.client.Identifiers;
 
 import java.io.FileInputStream;
@@ -23,20 +24,26 @@ public class Config {
 
     /**
      * Gets <code>Config</code> instance created from config.xml
+     *
      * @return instance of <code>Config</code>
      */
     public static Config getInstance() {
-        if(INSTANCE == null)
+        if (INSTANCE == null)
             try {
                 INSTANCE = new Config();
             } catch (IOException e) {
                 System.out.println("Error: cannot read config.xml.");
                 System.err.println(e.toString());
                 System.exit(0);
+            } catch (BadArgumentException e) {
+                System.out.println("Error: client.range value is not in acceptable format");
+                System.err.println(e.toString());
+                System.exit(0);
             }
         return INSTANCE;
     }
-    private Config() throws IOException {
+
+    private Config() throws IOException, BadArgumentException {
         Properties properties = new Properties();
         properties.loadFromXML(new FileInputStream("config.xml"));
 
