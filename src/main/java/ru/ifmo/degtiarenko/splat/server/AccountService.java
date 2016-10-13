@@ -7,7 +7,7 @@ import java.sql.SQLException;
 /**
  * Created by Degtjarenko Ivan on 13.10.2016.
  */
-public interface AccountService extends Remote{
+public interface AccountService extends Remote {
     /**
      * Retrieves current balance or zero if addAmount() method was not called before for specified id
      *

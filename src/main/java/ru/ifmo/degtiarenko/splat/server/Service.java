@@ -46,7 +46,10 @@ public class Service implements AccountService {
     }
 
     public void addAmount(Integer id, Long value) throws RemoteException, SQLException {
-        AtomicLong accountBefore = cache.getOrDefault(id, dbConnection.getAmount(id));
+        AtomicLong accountBefore;
+        if(!cache.containsKey(id))
+            cache.putIfAbsent(id, dbConnection.getAmount(id));
+        accountBefore = cache.get(id);
         cache.put(id, new AtomicLong(value + accountBefore.longValue()));
         if(cache.size() > CACHE_MAX_SIZE) {
             dbConnection.updateData(cache);

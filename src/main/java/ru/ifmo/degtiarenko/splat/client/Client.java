@@ -28,18 +28,21 @@ public class Client {
     private final Identifiers ids;
     private final List<Thread> threads;
 
-    public Client(int rCount, int wCount, Identifiers ids) throws RemoteException, NotBoundException {
+    public Client(int rCount, int wCount, Identifiers ids, AccountService service) {
         this.rCount = rCount;
         this.wCount = wCount;
         this.ids = ids;
+        this.service = service;
 
         random = new Random();
         threads = new ArrayList<>(rCount + wCount);
-
-        Registry registry = LocateRegistry.getRegistry(HOST_IP, PORT);
-        service = (AccountService) registry.lookup(Service.BINDING_NAME);
     }
 
+    public static Client createClient(int rCount, int wCount, Identifiers ids) throws RemoteException, NotBoundException {
+        Registry registry = LocateRegistry.getRegistry(HOST_IP, PORT);
+        AccountService service = (AccountService) registry.lookup(Service.BINDING_NAME);
+        return new Client(rCount, wCount, ids, service);
+    }
     public void run() {
         for(int i = 0; i < rCount; i++) {
             threads.add(new Thread(new ReaderTask(ids)));
@@ -67,12 +70,14 @@ public class Client {
     public static void main(String[] args) {
         Client client = null;
         try {
-            client = new Client(Integer.parseInt(args[0]), Integer.parseInt(args[1]), new Identifiers(args[2]));
+            client = Client.createClient(Integer.parseInt(args[0]), Integer.parseInt(args[1]), new Identifiers(args[2]));
         } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
         }
         if (client != null) {
             client.run();
+        } else {
+            System.out.println("Failed to create client.");
         }
     }
 
@@ -95,7 +100,7 @@ public class Client {
         }
     }
 
-    public class WriterTask implements Runnable {
+    private class WriterTask implements Runnable {
         private final Identifiers ids;
 
         public WriterTask(Identifiers ids) {
