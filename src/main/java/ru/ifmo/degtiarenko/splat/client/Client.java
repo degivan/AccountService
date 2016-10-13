@@ -1,7 +1,7 @@
 package ru.ifmo.degtiarenko.splat.client;
 
+import ru.ifmo.degtiarenko.splat.config.Config;
 import ru.ifmo.degtiarenko.splat.server.AccountService;
-import ru.ifmo.degtiarenko.splat.server.Service;
 
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -17,9 +17,6 @@ import java.util.Scanner;
  * Created by Degtjarenko Ivan on 13.10.2016.
  */
 public class Client {
-    private static final String HOST_IP = "localhost";
-    private static final int PORT = 2099;
-
     private AccountService service;
 
     private final Random random;
@@ -38,10 +35,10 @@ public class Client {
         threads = new ArrayList<>(rCount + wCount);
     }
 
-    public static Client createClient(int rCount, int wCount, Identifiers ids) throws RemoteException, NotBoundException {
-        Registry registry = LocateRegistry.getRegistry(HOST_IP, PORT);
-        AccountService service = (AccountService) registry.lookup(Service.BINDING_NAME);
-        return new Client(rCount, wCount, ids, service);
+    public static Client createClient(Config config) throws RemoteException, NotBoundException {
+        Registry registry = LocateRegistry.getRegistry(config.getServiceHostIp(), config.getServicePort());
+        AccountService service = (AccountService) registry.lookup(config.getServiceBindingName());
+        return new Client(config.getClientRCount(), config.getClientWCount(), config.getClientRange(), service);
     }
     public void run() {
         for(int i = 0; i < rCount; i++) {
@@ -70,7 +67,7 @@ public class Client {
     public static void main(String[] args) {
         Client client = null;
         try {
-            client = Client.createClient(Integer.parseInt(args[0]), Integer.parseInt(args[1]), new Identifiers(args[2]));
+            client = Client.createClient(Config.getInstance());
         } catch (RemoteException | NotBoundException e) {
             e.printStackTrace();
         }

@@ -1,5 +1,7 @@
 package ru.ifmo.degtiarenko.splat.server;
 
+import ru.ifmo.degtiarenko.splat.config.Config;
+
 import java.sql.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -35,10 +37,10 @@ public class DBConnection implements AutoCloseable {
         selectStatement = new ThreadLocal<>();
     }
 
-    public static DBConnection createConnection(String url, String name, String password) throws Exception {
+    public static DBConnection createConnection(Config config) throws Exception {
         Connection connection;
         try {
-            connection = DriverManager.getConnection(url, name, password);
+            connection = DriverManager.getConnection(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword());
             connection.setAutoCommit(true);
             return new DBConnection(connection);
         } catch (SQLException e) {

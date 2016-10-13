@@ -1,6 +1,10 @@
 package ru.ifmo.degtiarenko.splat.server;
 
-import java.rmi.*;
+import ru.ifmo.degtiarenko.splat.config.Config;
+
+import java.rmi.NotBoundException;
+import java.rmi.Remote;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
@@ -9,39 +13,40 @@ import java.util.Calendar;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by Degtjarenko Ivan on 13.10.2016.
  */
 public class Service implements AccountService {
-    public static final String BINDING_NAME = "test/AccountService";
     private static final int CACHE_MAX_SIZE = 4_000_000;
 
     private final DBConnection dbConnection;
     private final Registry registry;
+    private final String bindingName;
     private ConcurrentMap<Integer, AtomicLong> cache;
 
     //statistics
-    private volatile int readRequestCount;
-    private volatile int writeRequestCount;
+    private AtomicInteger readRequestCount;
+    private AtomicInteger writeRequestCount;
     private Calendar startTime;
 
-    public Service(int port) throws Exception {
-        dbConnection = DBConnection.createConnection("jdbc:postgresql://127.0.0.1:5433/test",
-                "test_user", "qwerty");
+    public Service(Config config) throws Exception {
+        dbConnection = DBConnection.createConnection(config);
         cache = new ConcurrentHashMap<>();
-        startTime = Calendar.getInstance();
-        registry = LocateRegistry.createRegistry(port);
-        Remote stub = UnicastRemoteObject.exportObject(this, port);
-        registry.bind(BINDING_NAME, stub);
+        resetStatistics();
+        registry = LocateRegistry.createRegistry(config.getServicePort());
+        Remote stub = UnicastRemoteObject.exportObject(this, config.getServicePort());
+        bindingName = config.getServiceBindingName();
+        registry.bind(config.getServiceBindingName(), stub);
     }
 
 
     public Long getAmount(Integer id) throws RemoteException, SQLException {
         if(!cache.containsKey(id))
             cache.put(id, dbConnection.getAmount(id));
-        readRequestCount++;
+        readRequestCount.incrementAndGet();
         return cache.get(id).longValue();
     }
 
@@ -55,7 +60,7 @@ public class Service implements AccountService {
             dbConnection.updateData(cache);
             cache.clear();
         }
-        writeRequestCount++;
+        writeRequestCount.incrementAndGet();
     }
 
     public void run() {
@@ -81,8 +86,8 @@ public class Service implements AccountService {
     }
 
     private void resetStatistics() {
-        readRequestCount = 0;
-        writeRequestCount = 0;
+        readRequestCount = new AtomicInteger(0);
+        writeRequestCount = new AtomicInteger(0);
         startTime = Calendar.getInstance();
     }
 
@@ -90,13 +95,13 @@ public class Service implements AccountService {
         long time = (Calendar.getInstance().getTimeInMillis() - startTime.getTimeInMillis() ) / 1000;
         System.out.println("Total amount of read requests: " + readRequestCount);
         System.out.println("Total amount of write requests: " + writeRequestCount);
-        System.out.println("Average amount of read requests per second: " + readRequestCount / time);
-        System.out.println("Average amount of write requests per second: " + writeRequestCount / time);
+        System.out.println("Average amount of read requests per second: " + readRequestCount.intValue() / time);
+        System.out.println("Average amount of write requests per second: " + writeRequestCount.intValue() / time);
     }
 
     private void shutdown() {
         try {
-            registry.unbind(BINDING_NAME);
+            registry.unbind(bindingName);
             UnicastRemoteObject.unexportObject(this, true);
             dbConnection.close();
             System.out.println("Success.");
@@ -107,10 +112,9 @@ public class Service implements AccountService {
     }
 
     public static void main(String[] args) {
-        int port = 2099;
         Service service;
         try {
-            service = new Service(port);
+            service = new Service(Config.getInstance());
             service.run();
         } catch (Exception e) {
             e.printStackTrace();

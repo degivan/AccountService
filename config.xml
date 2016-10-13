@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE properties SYSTEM "http://java.sun.com/dtd/properties.dtd">
+<properties>
+    <entry key="service.port">2099</entry>
+    <entry key="service.host_ip">localhost</entry>
+    <entry key="service.binding_name">test/AccountService</entry>
+    <entry key="jdbc.user">test_user</entry>
+    <entry key="jdbc.pass">qwerty</entry>
+    <entry key="jdbc.url">jdbc:postgresql://127.0.0.1:5433/test</entry>
+    <entry key="client.rcount">10</entry>
+    <entry key="client.wcount">10</entry>
+    <entry key="client.range">1-1000000</entry>
+</properties>
