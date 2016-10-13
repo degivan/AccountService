@@ -12,7 +12,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Created by Degtjarenko Ivan on 13.10.2016.
+ * <P>A connection (session) with a specific
+ * database of accounts. Every account has an identifier(or id) and balance.
+ * <P>
  */
 public class DBConnection implements AutoCloseable {
     private final Connection connection;
@@ -37,24 +39,45 @@ public class DBConnection implements AutoCloseable {
         selectStatement = new ThreadLocal<>();
     }
 
+    /** Creates an instance of <code>DBConnection</code>.
+     * @param config configuration of <code>DBConnection</code>
+     * @return new instance of <code>DBConnection</code>
+     * @throws Exception if fails to connect to SQL server
+     */
     public static DBConnection createConnection(Config config) throws Exception {
         Connection connection;
         try {
             connection = DriverManager.getConnection(config.getJdbcUrl(), config.getJdbcUser(), config.getJdbcPassword());
             connection.setAutoCommit(true);
+            checkTable(connection);
             return new DBConnection(connection);
         } catch (SQLException e) {
             throw new Exception(e);
         }
     }
 
+    private static void checkTable(Connection connection) throws SQLException {
+        Statement statement = connection.createStatement();
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS accounts (" +
+                        "id INTEGER PRIMARY KEY, account BIGINT);");
+    }
+
+    /** Releases this <code>DBConnection</code> object's database and JDBC resources immediately.
+     * @throws SQLException if a database access error occurs
+     */
     public void close() throws SQLException {
         connection.close();
     }
 
+    /**
+     * Gets information about account's balance with chosen <code>id</code>  from SQL server.
+     * @param id identifier of an account
+     * @return account's balance
+     * @throws SQLException if fails to execute query
+     */
     public AtomicLong getAmount(Integer id) throws SQLException {
         if(selectStatement.get() == null)
-            selectStatement.set(connection.prepareStatement("SELECT account FROM acccounts WHERE id = ?;"));
+            selectStatement.set(connection.prepareStatement("SELECT account FROM accounts WHERE id = ?;"));
         selectStatement.get().setInt(1, id);
 
         Lock lock = locks.getOrDefault(id, null);
@@ -70,7 +93,7 @@ public class DBConnection implements AutoCloseable {
                 return new AtomicLong(rs.getLong(1));
             } else {
                 if(insertStatement.get() == null)
-                    insertStatement.set(connection.prepareStatement("INSERT INTO acccounts (id, account) VALUES (?, 0);"));
+                    insertStatement.set(connection.prepareStatement("INSERT INTO accounts (id, account) VALUES (?, 0);"));
                 insertStatement.get().setInt(1, id);
                 insertStatement.get().executeUpdate();
                 return new AtomicLong(0);
@@ -80,13 +103,17 @@ public class DBConnection implements AutoCloseable {
         }
     }
 
+    /** Updates balances in database.
+     * @param data new balances
+     * @throws SQLException  if fails to execute query
+     */
     public void updateData(ConcurrentMap<Integer, AtomicLong> data) throws SQLException {
         data.forEach((id, account) -> {
             try {
                 if(updateStatement.get() == null)
-                    updateStatement.set(connection.prepareStatement("UPDATE acccounts SET account = ? WHERE id = ?;"));
-                updateStatement.get().setInt(1, id);
-                updateStatement.get().setLong(2, account.longValue());
+                    updateStatement.set(connection.prepareStatement("UPDATE accounts SET account = ? WHERE id = ?;"));
+                updateStatement.get().setLong(1, account.longValue());
+                updateStatement.get().setInt(2, id);
                 updateStatement.get().executeUpdate();
             } catch (SQLException e) {
                 e.printStackTrace();

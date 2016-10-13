@@ -5,7 +5,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Created by Degtjarenko Ivan on 13.10.2016.
+ * The <code>Identifiers</code> class encapsulates an information about acceptable <code>id</code> values and provides method
+ * to get random value with equal probability for all values.
  */
 public class Identifiers {
     private final Random random;
@@ -26,6 +27,10 @@ public class Identifiers {
         }
     }
 
+    /**
+     * Gets random acceptable identifier value.
+     * @return identifier
+     */
     public int getRandomIdentifier() {
         int randomIndex = Math.abs(random.nextInt() % size);
         int result = 0;

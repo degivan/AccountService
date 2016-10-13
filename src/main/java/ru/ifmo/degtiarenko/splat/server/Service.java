@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Created by Degtjarenko Ivan on 13.10.2016.
+ * Implementation of <code>AccountService</code> interface via RMI and PostgreSQL.
  */
 public class Service implements AccountService {
     private static final int CACHE_MAX_SIZE = 4_000_000;
@@ -43,6 +43,12 @@ public class Service implements AccountService {
     }
 
 
+    /** Implementation of <code>AccountService</code> interface method.
+     * @param id balance identifier
+     * @return account's balance
+     * @throws RemoteException if failed to invoke method remotely
+     * @throws SQLException if failed to execute query to the database
+     */
     public Long getAmount(Integer id) throws RemoteException, SQLException {
         if(!cache.containsKey(id))
             cache.put(id, dbConnection.getAmount(id));
@@ -50,6 +56,12 @@ public class Service implements AccountService {
         return cache.get(id).longValue();
     }
 
+    /** Implementation of <code>AccountService</code> interface method.
+     * @param id    balance identifier
+     * @param value positive or negative value, which must be added to current balance
+     * @throws RemoteException if failed to invoke method remotely
+     * @throws SQLException if failed to execute query to the database
+     */
     public void addAmount(Integer id, Long value) throws RemoteException, SQLException {
         AtomicLong accountBefore;
         if(!cache.containsKey(id))
@@ -63,6 +75,9 @@ public class Service implements AccountService {
         writeRequestCount.incrementAndGet();
     }
 
+    /**
+     * Starts service work.
+     */
     public void run() {
         Scanner scanner = new Scanner(System.in);
         label:
@@ -101,6 +116,7 @@ public class Service implements AccountService {
 
     private void shutdown() {
         try {
+            dbConnection.updateData(cache);
             registry.unbind(bindingName);
             UnicastRemoteObject.unexportObject(this, true);
             dbConnection.close();

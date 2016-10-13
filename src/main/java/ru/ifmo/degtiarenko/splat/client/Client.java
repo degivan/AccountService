@@ -14,7 +14,7 @@ import java.util.Random;
 import java.util.Scanner;
 
 /**
- * Created by Degtjarenko Ivan on 13.10.2016.
+ * Test client for the <code>AccountService</code> implementation.
  */
 public class Client {
     private AccountService service;
@@ -35,11 +35,22 @@ public class Client {
         threads = new ArrayList<>(rCount + wCount);
     }
 
+    /**
+     * Creates new <code>Client</code> instance.
+     * @param config configuration of <code>Client</code>
+     * @return new <code>Client</code> instance.
+     * @throws RemoteException if failed to invoke <code>AccountService</code> method(s) remotely
+     * @throws NotBoundException if failed to find service
+     */
     public static Client createClient(Config config) throws RemoteException, NotBoundException {
         Registry registry = LocateRegistry.getRegistry(config.getServiceHostIp(), config.getServicePort());
         AccountService service = (AccountService) registry.lookup(config.getServiceBindingName());
         return new Client(config.getClientRCount(), config.getClientWCount(), config.getClientRange(), service);
     }
+
+    /**
+     * Starts testing of <code>AccountService</code> implementation.
+     */
     public void run() {
         for(int i = 0; i < rCount; i++) {
             threads.add(new Thread(new ReaderTask(ids)));
@@ -60,7 +71,7 @@ public class Client {
         }
     }
 
-    public void shutdown() {
+    private void shutdown() {
         threads.forEach(Thread::interrupt);
     }
 
@@ -93,6 +104,8 @@ public class Client {
                 } catch (RemoteException | SQLException e) {
                     e.printStackTrace();
                 }
+                if(Thread.currentThread().isInterrupted())
+                    break;
             }
         }
     }
@@ -112,6 +125,8 @@ public class Client {
                 } catch (RemoteException | SQLException e) {
                     e.printStackTrace();
                 }
+                if(Thread.currentThread().isInterrupted())
+                    break;
             }
         }
     }

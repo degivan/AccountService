@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 /**
- * Created by Degtjarenko Ivan on 13.10.2016.
+ * Configuration of server, database connection and client.
  */
 public class Config {
     private static Config INSTANCE = null;
@@ -21,6 +21,10 @@ public class Config {
     private final int clientWCount;
     private final Identifiers clientRange;
 
+    /**
+     * Gets <code>Config</code> instance created from config.xml
+     * @return instance of <code>Config</code>
+     */
     public static Config getInstance() {
         if(INSTANCE == null)
             try {
